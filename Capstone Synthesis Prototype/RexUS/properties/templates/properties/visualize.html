@@ -1,0 +1,758 @@
+{% load dict_filters %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualize {{ data_file.name }} - RexUS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .chart-container {
+            position: relative;
+            height: 500px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: 100%;
+        }
+        .chart-type-select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        .chart-type-select:disabled {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        .chart-type-select[multiple] {
+            min-height: 150px;
+        }
+        .chart-type-select[multiple] option {
+            padding: 8px;
+            margin: 2px 0;
+        }
+        .chart-type-select[multiple] option:checked {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .visualize-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .visualize-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        .visualize-btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        .visualize-btn:disabled {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            cursor: not-allowed;
+            box-shadow: none;
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="{% url 'dashboard' %}">RexUS</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item">
+                        <span class="navbar-text text-white me-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-circle me-1" viewBox="0 0 16 16">
+                                <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0"/>
+                                <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1"/>
+                            </svg>
+                            {{ user.get_full_name }}
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'file_list' %}">My Files</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'upload' %}">Upload Data</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2>Data Visualization</h2>
+                <p class="text-muted mb-0">{{ data_file.name }} - {{ data_file.record_count }} records</p>
+            </div>
+            <div>
+                <a href="{% url 'file_detail' data_file.id %}" class="btn btn-outline-primary">Back to Details</a>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <h5 class="mb-3">Visualization Controls</h5>
+
+                    <label class="form-label fw-bold">Chart Type</label>
+                    <select id="chartTypeSelect" class="chart-type-select mb-3">
+                        <option value="">Select Chart Type</option>
+                        <option value="bar">Bar Chart</option>
+                        <option value="line">Line Chart</option>
+                        <option value="timeseries">Time Series Chart</option>
+                        <option value="pie">Pie Chart</option>
+                        <option value="doughnut">Doughnut Chart</option>
+                    </select>
+
+                    <label class="form-label fw-bold">X-Axis Column</label>
+                    <select id="xAxisSelect" class="chart-type-select mb-3" disabled>
+                        <option value="">Choose X-Axis column</option>
+                        {% for column in columns %}
+                        {% with col_stats=stats|get_item:column %}
+                        <option value="{{ column }}" data-is-numeric="{% if col_stats.is_numeric %}true{% else %}false{% endif %}">
+                            {{ column }} {% if col_stats.is_numeric %}(Numeric){% else %}(Text){% endif %}
+                        </option>
+                        {% endwith %}
+                        {% endfor %}
+                    </select>
+
+                    <label class="form-label fw-bold">
+                        Y-Axis Column(s)
+                        <span id="multiSelectHint" class="badge bg-info" style="display: none; font-size: 11px;">Hold Ctrl/Cmd for multiple</span>
+                    </label>
+                    <select id="yAxisSelect" class="chart-type-select mb-3" size="5" style="height: auto;" disabled>
+                        <option value="">Choose Y-Axis column(s)</option>
+                        {% for column in columns %}
+                        {% with col_stats=stats|get_item:column %}
+                        <option value="{{ column }}" data-is-numeric="{% if col_stats.is_numeric %}true{% else %}false{% endif %}">
+                            {{ column }} {% if col_stats.is_numeric %}(Numeric){% else %}(Text){% endif %}
+                        </option>
+                        {% endwith %}
+                        {% endfor %}
+                    </select>
+
+                    <button id="visualizeBtn" class="visualize-btn" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-graph-up me-2" viewBox="0 0 16 16" style="vertical-align: middle;">
+                            <path fill-rule="evenodd" d="M0 0h1v15h15v1H0zm14.817 3.113a.5.5 0 0 1 .07.704l-4.5 5.5a.5.5 0 0 1-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 0 1-.808-.588l4-5.5a.5.5 0 0 1 .758-.06l2.609 2.61 4.15-5.073a.5.5 0 0 1 .704-.07"/>
+                        </svg>
+                        Visualize
+                    </button>
+
+                    <hr class="my-4">
+
+                    <h5 class="mb-3">Forecast Settings</h5>
+                    <p class="text-muted small mb-3">Predict future trends (works best with time series data)</p>
+
+                    <div id="forecastPanel" style="display: none;">
+                        <label class="form-label fw-bold">Forecast Method</label>
+                        <select id="forecastMethod" class="chart-type-select mb-3">
+                            <option value="linear">Linear Trend</option>
+                            <option value="polynomial">Curved Trend</option>
+                        </select>
+
+                        <label class="form-label fw-bold">Periods Ahead</label>
+                        <input type="number" id="forecastPeriods" class="chart-type-select mb-3" value="5" min="1" max="20">
+
+                        <button id="forecastBtn" class="visualize-btn" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-graph-up-arrow me-2" viewBox="0 0 16 16" style="vertical-align: middle;">
+                                <path fill-rule="evenodd" d="M0 0h1v15h15v1H0zm10 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-1 0V4.9l-3.613 4.417a.5.5 0 0 1-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 0 1-.808-.588l4-5.5a.5.5 0 0 1 .758-.06l2.609 2.61L13.445 4H10.5a.5.5 0 0 1-.5-.5"/>
+                            </svg>
+                            Apply Forecast
+                        </button>
+
+                        <button id="clearForecastBtn" class="visualize-btn mt-2" style="background: linear-gradient(135deg, #6c757d 0%, #495057 100%); box-shadow: 0 4px 15px rgba(108, 117, 125, 0.4); font-size: 14px; padding: 10px;">
+                            Clear Forecast
+                        </button>
+                    </div>
+
+                    <div id="forecastDisabledMsg" class="alert alert-info p-2 small">
+                        Create a time series or line chart first to enable forecasting
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-9">
+                <div class="chart-container mb-4">
+                    <canvas id="mainChart"></canvas>
+                    <div id="emptyState" class="text-center" style="padding-top: 150px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="bi bi-graph-up text-muted mb-3" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M0 0h1v15h15v1H0zm14.817 3.113a.5.5 0 0 1 .07.704l-4.5 5.5a.5.5 0 0 1-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 0 1-.808-.588l4-5.5a.5.5 0 0 1 .758-.06l2.609 2.61 4.15-5.073a.5.5 0 0 1 .704-.07"/>
+                        </svg>
+                        <h4 class="text-muted">Select a column to visualize</h4>
+                        <p class="text-muted">Choose a column from the left to see its distribution</p>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="chart-container" style="height: 350px;">
+                            <h5 class="mb-3">Null Values by Column</h5>
+                            <canvas id="nullChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="chart-container" style="height: 350px;">
+                            <h5 class="mb-3">Column Data Types</h5>
+                            <canvas id="typeChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const datasetData = {{ data_json|safe }};
+        const columns = {{ columns_json|safe }};
+        const stats = {{ stats_json|safe }};
+
+        let mainChart = null;
+        let selectedXAxis = null;
+        let selectedYAxis = [];
+        let selectedChartType = '';
+
+        // Filter columns based on chart type
+        function filterColumns() {
+            const chartType = document.getElementById('chartTypeSelect').value;
+            const xAxisSelect = document.getElementById('xAxisSelect');
+            const yAxisSelect = document.getElementById('yAxisSelect');
+            const multiSelectHint = document.getElementById('multiSelectHint');
+
+            // Enable or disable axis selection based on chart type
+            if (!chartType) {
+                xAxisSelect.disabled = true;
+                yAxisSelect.disabled = true;
+                xAxisSelect.value = '';
+                yAxisSelect.selectedIndex = -1;
+                selectedXAxis = null;
+                selectedYAxis = [];
+                multiSelectHint.style.display = 'none';
+                updateVisualizeButton();
+                return;
+            }
+
+            xAxisSelect.disabled = false;
+            yAxisSelect.disabled = false;
+
+            // Reset selections
+            xAxisSelect.value = '';
+            yAxisSelect.selectedIndex = -1;
+            selectedXAxis = null;
+            selectedYAxis = [];
+            updateVisualizeButton();
+
+            // Enable/disable multiple selection for Y-axis based on chart type
+            // Bar, Line, and Time Series support multiple Y-axis
+            const supportsMultipleY = (chartType === 'bar' || chartType === 'line' || chartType === 'timeseries');
+            yAxisSelect.multiple = supportsMultipleY;
+            multiSelectHint.style.display = supportsMultipleY ? 'inline' : 'none';
+
+            // Filter X-axis columns (all types can be X-axis)
+            const xOptions = xAxisSelect.querySelectorAll('option');
+            xOptions.forEach((option, index) => {
+                if (index === 0) return;
+                option.style.display = 'block';
+            });
+
+            // Filter Y-axis columns based on chart type
+            const yOptions = yAxisSelect.querySelectorAll('option');
+            yOptions.forEach((option, index) => {
+                if (index === 0) return;
+
+                const isNumeric = option.dataset.isNumeric === 'true';
+
+                // Bar, Line, and Time Series need numeric Y-axis
+                // Pie and Doughnut need numeric Y-axis (for values)
+                if (!isNumeric && (chartType === 'bar' || chartType === 'line' || chartType === 'timeseries')) {
+                    option.style.display = 'none';
+                } else if (!isNumeric && (chartType === 'pie' || chartType === 'doughnut')) {
+                    option.style.display = 'none';
+                } else {
+                    option.style.display = 'block';
+                }
+            });
+        }
+
+        // Update visualize button state
+        function updateVisualizeButton() {
+            const btn = document.getElementById('visualizeBtn');
+            btn.disabled = !selectedXAxis || selectedYAxis.length === 0;
+        }
+
+        // X-Axis selection
+        document.getElementById('xAxisSelect').addEventListener('change', function() {
+            selectedXAxis = this.value;
+            updateVisualizeButton();
+        });
+
+        // Y-Axis selection
+        document.getElementById('yAxisSelect').addEventListener('change', function() {
+            const selected = Array.from(this.selectedOptions).map(opt => opt.value).filter(v => v);
+            selectedYAxis = selected;
+            updateVisualizeButton();
+        });
+
+        // Chart type selection
+        document.getElementById('chartTypeSelect').addEventListener('change', function() {
+            selectedChartType = this.value;
+            filterColumns();
+        });
+
+        // Visualize button
+        document.getElementById('visualizeBtn').addEventListener('click', function() {
+            if (selectedXAxis && selectedYAxis.length > 0) {
+                updateMainChart();
+                updateForecastPanel();
+            }
+        });
+
+        // Update main chart
+        function updateMainChart() {
+            if (!selectedXAxis || selectedYAxis.length === 0) return;
+
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('mainChart').style.display = 'block';
+
+            // Get X-axis data (labels)
+            const xData = datasetData.map(row => row[selectedXAxis]);
+
+            // Get unique X values and sort them
+            const uniqueX = [...new Set(xData)].filter(v => v !== '' && v !== null);
+            const isXNumeric = stats[selectedXAxis].is_numeric;
+
+            // Helper function to format dates (remove time part)
+            function formatDateLabel(value) {
+                // Check if it's a date string (ISO format or contains 'T' separator)
+                if (typeof value === 'string' && (value.includes('T') || value.match(/^\d{4}-\d{2}-\d{2}/))) {
+                    // Extract just the date part (YYYY-MM-DD)
+                    const dateMatch = value.match(/^(\d{4}-\d{2}-\d{2})/);
+                    if (dateMatch) {
+                        return dateMatch[1];
+                    }
+                }
+                return value;
+            }
+
+            let labels;
+            if (isXNumeric) {
+                labels = uniqueX.map(v => parseFloat(v)).sort((a, b) => a - b).map(v => v.toString());
+            } else {
+                // Format date labels and limit to 50 for readability
+                labels = uniqueX.map(v => formatDateLabel(v)).slice(0, 50);
+
+                // Sort dates if they look like dates
+                if (labels.length > 0 && labels[0].match(/^\d{4}-\d{2}-\d{2}/)) {
+                    labels.sort();
+                }
+            }
+
+            // Create datasets for each Y-axis column
+            const datasets = selectedYAxis.map((yCol, index) => {
+                const colors = [
+                    { bg: 'rgba(13, 110, 253, 0.7)', border: 'rgba(13, 110, 253, 1)' },
+                    { bg: 'rgba(25, 135, 84, 0.7)', border: 'rgba(25, 135, 84, 1)' },
+                    { bg: 'rgba(220, 53, 69, 0.7)', border: 'rgba(220, 53, 69, 1)' },
+                    { bg: 'rgba(255, 193, 7, 0.7)', border: 'rgba(255, 193, 7, 1)' },
+                    { bg: 'rgba(13, 202, 240, 0.7)', border: 'rgba(13, 202, 240, 1)' },
+                    { bg: 'rgba(108, 117, 125, 0.7)', border: 'rgba(108, 117, 125, 1)' }
+                ];
+                const color = colors[index % colors.length];
+
+                // Map Y values to X labels
+                const yData = labels.map(label => {
+                    // Find all rows where X matches this label
+                    const matchingRows = datasetData.filter(row => {
+                        let xVal = isXNumeric ? parseFloat(row[selectedXAxis]) : row[selectedXAxis];
+                        const labelVal = isXNumeric ? parseFloat(label) : label;
+
+                        // Format xVal if it's a date string
+                        if (!isXNumeric && typeof xVal === 'string') {
+                            xVal = formatDateLabel(xVal);
+                        }
+
+                        return xVal === labelVal;
+                    });
+
+                    if (matchingRows.length === 0) return 0;
+
+                    // For pie/doughnut, sum the values; for others, average them
+                    const yValues = matchingRows
+                        .map(row => row[yCol])
+                        .filter(v => v !== '' && v !== null)
+                        .map(v => parseFloat(v));
+
+                    if (yValues.length === 0) return 0;
+
+                    if (selectedChartType === 'pie' || selectedChartType === 'doughnut') {
+                        return yValues.reduce((sum, val) => sum + val, 0);
+                    } else {
+                        return yValues.reduce((sum, val) => sum + val, 0) / yValues.length;
+                    }
+                });
+
+                return {
+                    label: yCol,
+                    data: yData,
+                    backgroundColor: (selectedChartType === 'pie' || selectedChartType === 'doughnut')
+                        ? colors.map(c => c.bg)
+                        : color.bg,
+                    borderColor: (selectedChartType === 'pie' || selectedChartType === 'doughnut')
+                        ? colors.map(c => c.border)
+                        : color.border,
+                    borderWidth: selectedChartType === 'timeseries' ? 3 : 2,
+                    tension: (selectedChartType === 'timeseries' || selectedChartType === 'line') ? 0.4 : 0,
+                    fill: selectedChartType === 'timeseries'
+                };
+            });
+
+            if (mainChart) mainChart.destroy();
+
+            const ctx = document.getElementById('mainChart').getContext('2d');
+
+            // Use 'line' type for timeseries
+            const chartType = selectedChartType === 'timeseries' ? 'line' : selectedChartType;
+
+            // For pie/doughnut with multiple Y columns, use only the first Y column
+            const displayDatasets = (selectedChartType === 'pie' || selectedChartType === 'doughnut')
+                ? [datasets[0]]
+                : datasets;
+
+            const yAxisLabels = selectedYAxis.length > 1
+                ? selectedYAxis.join(', ')
+                : selectedYAxis[0];
+
+            mainChart = new Chart(ctx, {
+                type: chartType,
+                data: {
+                    labels: labels,
+                    datasets: displayDatasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: (selectedChartType === 'pie' || selectedChartType === 'doughnut') ? 'right' : 'top'
+                        },
+                        title: {
+                            display: true,
+                            text: `${selectedXAxis} vs ${yAxisLabels}`,
+                            font: { size: 16, weight: 'bold' }
+                        }
+                    },
+                    scales: selectedChartType === 'pie' || selectedChartType === 'doughnut' ? {} : {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0,0,0,0.05)' },
+                            title: {
+                                display: true,
+                                text: yAxisLabels
+                            }
+                        },
+                        x: {
+                            grid: { display: selectedChartType === 'timeseries' },
+                            title: {
+                                display: true,
+                                text: selectedXAxis
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Clear any existing forecast when chart changes
+            clearForecast();
+        }
+
+        // Forecast functionality
+        let forecastData = null;
+
+        function updateForecastPanel() {
+            const forecastPanel = document.getElementById('forecastPanel');
+            const forecastDisabledMsg = document.getElementById('forecastDisabledMsg');
+
+            // Only enable forecast for line, timeseries charts with single Y-axis
+            const canForecast = (selectedChartType === 'line' || selectedChartType === 'timeseries') &&
+                                selectedYAxis.length === 1 &&
+                                selectedXAxis &&
+                                selectedYAxis.length > 0;
+
+            if (canForecast) {
+                forecastPanel.style.display = 'block';
+                forecastDisabledMsg.style.display = 'none';
+            } else {
+                forecastPanel.style.display = 'none';
+                forecastDisabledMsg.style.display = 'block';
+            }
+        }
+
+        // Apply forecast button
+        document.getElementById('forecastBtn').addEventListener('click', async function() {
+            const method = document.getElementById('forecastMethod').value;
+            const periods = parseInt(document.getElementById('forecastPeriods').value);
+
+            if (!selectedXAxis || selectedYAxis.length !== 1) {
+                alert('Please select a single Y-axis column for forecasting');
+                return;
+            }
+
+            const btn = this;
+            btn.disabled = true;
+            btn.textContent = 'Forecasting...';
+
+            try {
+                const response = await fetch(`/dashboard/files/{{ data_file.id }}/forecast/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        x_column: selectedXAxis,
+                        y_column: selectedYAxis[0],
+                        periods: periods,
+                        method: method
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.error) {
+                    alert('Forecast error: ' + result.error);
+                    return;
+                }
+
+                forecastData = result;
+                updateChartWithForecast();
+
+            } catch (error) {
+                alert('Failed to generate forecast: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-graph-up-arrow me-2" viewBox="0 0 16 16" style="vertical-align: middle;">
+                    <path fill-rule="evenodd" d="M0 0h1v15h15v1H0zm10 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-1 0V4.9l-3.613 4.417a.5.5 0 0 1-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 0 1-.808-.588l4-5.5a.5.5 0 0 1 .758-.06l2.609 2.61L13.445 4H10.5a.5.5 0 0 1-.5-.5"/>
+                </svg> Apply Forecast`;
+            }
+        });
+
+        // Clear forecast button
+        document.getElementById('clearForecastBtn').addEventListener('click', function() {
+            clearForecast();
+            updateMainChart();
+        });
+
+        function clearForecast() {
+            forecastData = null;
+        }
+
+        function updateChartWithForecast() {
+            if (!mainChart || !forecastData) return;
+
+            // Helper function to format dates (remove time part)
+            function formatDateLabel(value) {
+                // Check if it's a date string (ISO format or contains 'T' separator)
+                if (typeof value === 'string' && (value.includes('T') || value.match(/^\d{4}-\d{2}-\d{2}/))) {
+                    // Extract just the date part (YYYY-MM-DD)
+                    const dateMatch = value.match(/^(\d{4}-\d{2}-\d{2})/);
+                    if (dateMatch) {
+                        return dateMatch[1];
+                    }
+                }
+                return value;
+            }
+
+            // Format all labels to remove time components
+            const formattedOriginalLabels = forecastData.original_labels.map(formatDateLabel);
+            const formattedForecastLabels = forecastData.forecast_labels.map(formatDateLabel);
+
+            // Combine original and forecast labels
+            const allLabels = [...formattedOriginalLabels, ...formattedForecastLabels];
+
+            // Original data
+            const originalData = [...forecastData.original_values];
+            // Pad with nulls for forecast periods
+            for (let i = 0; i < forecastData.forecast_values.length; i++) {
+                originalData.push(null);
+            }
+
+            // Forecast data (pad with nulls at the beginning)
+            const forecastValues = [];
+            for (let i = 0; i < forecastData.original_values.length - 1; i++) {
+                forecastValues.push(null);
+            }
+            // Connect last actual point to first forecast
+            forecastValues.push(forecastData.original_values[forecastData.original_values.length - 1]);
+            forecastValues.push(...forecastData.forecast_values);
+
+            // Confidence intervals
+            const upperBound = [];
+            const lowerBound = [];
+            for (let i = 0; i < forecastData.original_values.length - 1; i++) {
+                upperBound.push(null);
+                lowerBound.push(null);
+            }
+            upperBound.push(forecastData.original_values[forecastData.original_values.length - 1]);
+            upperBound.push(...forecastData.upper_bound);
+            lowerBound.push(forecastData.original_values[forecastData.original_values.length - 1]);
+            lowerBound.push(...forecastData.lower_bound);
+
+            const datasets = [
+                {
+                    label: selectedYAxis[0] + ' (Actual)',
+                    data: originalData,
+                    borderColor: 'rgba(13, 110, 253, 1)',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: false
+                },
+                {
+                    label: selectedYAxis[0] + ' (Forecast)',
+                    data: forecastValues,
+                    borderColor: 'rgba(245, 87, 108, 1)',
+                    backgroundColor: 'rgba(245, 87, 108, 0.1)',
+                    borderWidth: 3,
+                    borderDash: [10, 5],
+                    tension: 0.4,
+                    fill: false
+                },
+                {
+                    label: 'Upper Bound (95%)',
+                    data: upperBound,
+                    borderColor: 'rgba(245, 87, 108, 0.3)',
+                    backgroundColor: 'rgba(245, 87, 108, 0.1)',
+                    borderWidth: 1,
+                    borderDash: [5, 5],
+                    tension: 0.4,
+                    fill: '+1',
+                    pointRadius: 0
+                },
+                {
+                    label: 'Lower Bound (95%)',
+                    data: lowerBound,
+                    borderColor: 'rgba(245, 87, 108, 0.3)',
+                    backgroundColor: 'rgba(245, 87, 108, 0.1)',
+                    borderWidth: 1,
+                    borderDash: [5, 5],
+                    tension: 0.4,
+                    fill: false,
+                    pointRadius: 0
+                }
+            ];
+
+            mainChart.data.labels = allLabels;
+            mainChart.data.datasets = datasets;
+            mainChart.options.plugins.title.text = `${selectedXAxis} vs ${selectedYAxis[0]} (with ${forecastData.method} forecast)`;
+            mainChart.update();
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Initialize Null Chart
+        const nullCtx = document.getElementById('nullChart').getContext('2d');
+        const nullData = columns.slice(0, 10).map(col => stats[col].null_count);
+        const nullLabels = columns.slice(0, 10);
+
+        new Chart(nullCtx, {
+            type: 'bar',
+            data: {
+                labels: nullLabels,
+                datasets: [{
+                    label: 'Null Count',
+                    data: nullData,
+                    backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                    borderColor: 'rgba(220, 53, 69, 1)',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // Initialize Type Chart
+        const typeCtx = document.getElementById('typeChart').getContext('2d');
+        let numericCount = 0, textCount = 0;
+        columns.forEach(col => stats[col].is_numeric ? numericCount++ : textCount++);
+
+        new Chart(typeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Numeric', 'Text'],
+                datasets: [{
+                    data: [numericCount, textCount],
+                    backgroundColor: ['rgba(13, 202, 240, 0.7)', 'rgba(108, 117, 125, 0.7)'],
+                    borderColor: ['rgba(13, 202, 240, 1)', 'rgba(108, 117, 125, 1)'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

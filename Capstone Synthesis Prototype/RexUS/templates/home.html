@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+
+{% block title %}Welcome to RexUS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .navbar {
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .navbar-brand {
+        font-size: 1.5rem;
+        letter-spacing: 1px;
+    }
+    .navbar-nav .nav-link {
+        color: rgba(255, 255, 255, 0.95) !important;
+        font-weight: 500;
+    }
+    .navbar-nav .nav-link:hover {
+        color: white !important;
+    }
+    .btn-get-started {
+        background-color: white;
+        color: #0d6efd;
+        border: none;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+    .btn-get-started:hover {
+        background-color: #f8f9fa;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="/">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-house-fill me-2" viewBox="0 0 16 16" style="vertical-align: middle;">
+                <path d="M8.707 1.5a1 1 0 0 0-1.414 0L.646 8.146a.5.5 0 0 0 .708.708L8 2.207l6.646 6.647a.5.5 0 0 0 .708-.708L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293z"/>
+                <path d="m8 3.293 6 6V13.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 13.5V9.293z"/>
+            </svg>
+            RexUS
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto align-items-center">
+                <li class="nav-item me-2">
+                    <a class="nav-link" href="{% url 'login' %}">Login</a>
+                </li>
+                <li class="nav-item">
+                    <a class="btn btn-get-started px-4 py-2 rounded-pill" href="{% url 'register' %}">Get Started</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="bg-primary text-white py-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-4">Real Estate Data Analysis Made Simple</h1>
+                <p class="lead mb-4">Upload, analyze, and visualize property sales data with powerful insights and interactive charts.</p>
+                <div class="d-flex gap-3">
+                    <a href="{% url 'register' %}" class="btn btn-light btn-lg text-primary">Get Started Free</a>
+                    <a href="{% url 'login' %}" class="btn btn-outline-light btn-lg">Login</a>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="text-center mt-4 mt-lg-0">
+                    <div class="bg-white rounded shadow-lg p-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" fill="currentColor" class="bi bi-bar-chart-fill text-primary" viewBox="0 0 16 16">
+                            <path d="M1 11a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm5-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zm5-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container my-5">
+    <div class="row text-center mb-5">
+        <div class="col-12">
+            <h2 class="fw-bold mb-3">Key Features</h2>
+            <p class="text-muted">Everything you need to analyze real estate data</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="bi bi-file-earmark-arrow-up text-primary" viewBox="0 0 16 16">
+                            <path d="M8.5 11.5a.5.5 0 0 1-1 0V7.707L6.354 8.854a.5.5 0 1 1-.708-.708l2-2a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 7.707z"/>
+                            <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2M9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"/>
+                        </svg>
+                    </div>
+                    <h5 class="fw-bold">Easy Upload</h5>
+                    <p class="text-muted">Upload CSV or Excel files with property data in any format</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="bi bi-graph-up text-primary" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M0 0h1v15h15v1H0zm14.817 3.113a.5.5 0 0 1 .07.704l-4.5 5.5a.5.5 0 0 1-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 0 1-.808-.588l4-5.5a.5.5 0 0 1 .758-.06l2.609 2.61 4.15-5.073a.5.5 0 0 1 .704-.07"/>
+                        </svg>
+                    </div>
+                    <h5 class="fw-bold">Visual Analytics</h5>
+                    <p class="text-muted">Interactive charts and graphs powered by Chart.js</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="bi bi-speedometer2 text-primary" viewBox="0 0 16 16">
+                            <path d="M8 4a.5.5 0 0 1 .5.5V6a.5.5 0 0 1-1 0V4.5A.5.5 0 0 1 8 4M3.732 5.732a.5.5 0 0 1 .707 0l.915.914a.5.5 0 1 1-.708.708l-.914-.915a.5.5 0 0 1 0-.707M2 10a.5.5 0 0 1 .5-.5h1.586a.5.5 0 0 1 0 1H2.5A.5.5 0 0 1 2 10m9.5 0a.5.5 0 0 1 .5-.5h1.5a.5.5 0 0 1 0 1H12a.5.5 0 0 1-.5-.5m.754-4.246a.39.39 0 0 0-.527-.02L7.547 9.31a.91.91 0 1 0 1.302 1.258l3.434-4.297a.39.39 0 0 0-.029-.518z"/>
+                            <path fill-rule="evenodd" d="M0 10a8 8 0 1 1 15.547 2.661c-.442 1.253-1.845 1.602-2.932 1.25C11.309 13.488 9.475 13 8 13c-1.474 0-3.31.488-4.615.911-1.087.352-2.49.003-2.932-1.25A8 8 0 0 1 0 10m8-7a7 7 0 0 0-6.603 9.329c.203.575.923.876 1.68.63C4.397 12.533 6.358 12 8 12s3.604.532 4.923.96c.757.245 1.477-.056 1.68-.631A7 7 0 0 0 8 3"/>
+                        </svg>
+                    </div>
+                    <h5 class="fw-bold">Real-time Insights</h5>
+                    <p class="text-muted">Get instant statistics and trends from your data</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="bg-light py-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h2 class="fw-bold mb-4">Start Analyzing Today</h2>
+                <p class="mb-4">Join RexUS and transform your real estate data into actionable insights. Upload your first dataset and see the power of visualization.</p>
+                <a href="{% url 'register' %}" class="btn btn-primary btn-lg">Create Free Account</a>
+            </div>
+            <div class="col-lg-6">
+                <div class="card border-0 shadow">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold mb-3">What You Get:</h5>
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><span class="text-primary fw-bold">✓</span> Unlimited data uploads</li>
+                            <li class="mb-2"><span class="text-primary fw-bold">✓</span> Interactive dashboards</li>
+                            <li class="mb-2"><span class="text-primary fw-bold">✓</span> Export-ready visualizations</li>
+                            <li class="mb-2"><span class="text-primary fw-bold">✓</span> Secure data storage</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="bg-dark text-white py-4 mt-5">
+    <div class="container text-center">
+        <p class="mb-0">RexUS - Real Estate eXploration and Unified Synthesis</p>
+        <p class="text-muted small mt-2">Data-driven insights for real estate professionals</p>
+    </div>
+</footer>
+{% endblock %}
